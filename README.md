@@ -107,7 +107,13 @@ npm install
 npm run dev
 ```
 
-> A aplicação fica disponível em `http://localhost:5173`.
+> A aplicação fica disponível em `http://localhost:5173`. As chamadas para `/api/*`
+> são encaminhadas para a API na porta `5231` através do proxy configurado em
+> [`vite.config.ts`](controleDeGastosFront/vite.config.ts) — por isso o front-end
+> nunca chama `http://localhost:5231` diretamente, o que também evita problemas de
+> CORS e faz o projeto funcionar sem ajustes em ambientes como GitHub Codespaces
+> ou outros devcontainers (onde "localhost" no navegador nem sempre aponta para a
+> porta do back-end).
 
 ## 🔌 Endpoints da API
 

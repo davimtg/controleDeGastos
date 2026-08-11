@@ -47,20 +47,20 @@ function App() {
   const [transacaoPessoaId, setTransacaoPessoaId] = useState('');
 
   const buscarPessoas = () => {
-    axios.get('http://localhost:5231/api/Pessoas')
+    axios.get('/api/Pessoas')
       .then(res => setPessoas(res.data))
       .catch(err => console.error(err));
   };
 
   const buscarTransacoes = () => {
-    axios.get('http://localhost:5231/api/Transacao')
+    axios.get('/api/Transacao')
       .then(res => setTransacoes(res.data))
       .catch(err => console.error(err));
   };
 
   // busca o resumo de totais (por pessoa + geral) calculado no back-end
   const buscarTotais = () => {
-    axios.get('http://localhost:5231/api/Pessoas/totais')
+    axios.get('/api/Pessoas/totais')
       .then(res => setResumoTotais(res.data))
       .catch(err => console.error(err));
   };
@@ -73,7 +73,7 @@ function App() {
 
   const cadastrarPessoa = (e: FormEvent) => {
     e.preventDefault();
-    axios.post('http://localhost:5231/api/Pessoas', {
+    axios.post('/api/Pessoas', {
       nome: nome,
       idade: Number(idade)
     })
@@ -87,7 +87,7 @@ function App() {
   };
 
   const deletarPessoa = (id: number) => {
-    axios.delete(`http://localhost:5231/api/Pessoas/${id}`)
+    axios.delete(`/api/Pessoas/${id}`)
       .then(() => {
         buscarPessoas();
         // cascade no bd ja apaga as transacoes, so preciso atualizar a tela
@@ -105,7 +105,7 @@ function App() {
       return;
     }
 
-    axios.post('http://localhost:5231/api/Transacao', {
+    axios.post('/api/Transacao', {
       descricao: transacaoDescricao,
       valor: parseFloat(transacaoValor),
       tipo: transacaoTipo === 'Despesa' ? 1 : 0, 
