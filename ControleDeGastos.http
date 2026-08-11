@@ -1,0 +1,51 @@
+### Cadastrar a primeira Pessoa
+POST http://localhost:5231/api/Pessoas
+Content-Type: application/json
+
+{
+  "nome": "João da Silva",
+  "idade": 28
+}
+
+### Cdastrar transação para a pessoa cadastrada
+POST http://localhost:5231/api/Transacao
+Content-Type: application/json
+
+{
+  "pessoaId": 1,
+  "descricao": "Compra de produtos",
+  "valor": 100.00
+}
+
+### Deletar a Pessoa (e suas transações)
+DELETE http://localhost:5231/api/Pessoas/1
+
+
+### Cadastrar a primeira Pessoa
+POST http://localhost:5231/api/Pessoas
+Content-Type: application/json
+
+{
+  "nome": "João da Silva",
+  "idade": 7
+}
+### Cdastrar transação para a pessoa cadastrada
+POST http://localhost:5231/api/Transacao
+Content-Type: application/json
+
+{
+  "pessoaId": 2,
+  "descricao": "Compra de produtos",
+  "valor": 100.00,
+  "tipo": 1
+}
+
+### Cdastrar transação para a pessoa cadastrada
+POST http://localhost:5231/api/Transacao
+Content-Type: application/json
+
+{
+  "pessoaId": 2,
+  "descricao": "Compra de produtos",
+  "valor": 100.00,
+  "tipo": 0}

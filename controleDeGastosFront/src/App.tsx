@@ -1,0 +1,220 @@
+import { useEffect, useState, FormEvent } from 'react'
+import axios from 'axios'
+import './App.css'
+
+interface Pessoa {
+  id: number;
+  nome: string;
+  idade: number;
+}
+
+interface Transacao {
+  id: number;
+  descricao: string;
+  valor: number;
+  tipo: string | number; 
+  pessoaId: number;
+  pessoa?: Pessoa; 
+}
+
+function App() {
+  const [pessoas, setPessoas] = useState<Pessoa[]>([]);
+  const [transacoes, setTransacoes] = useState<Transacao[]>([]);
+  
+  const [nome, setNome] = useState('');
+  const [idade, setIdade] = useState('');
+
+  const [transacaoDescricao, setTransacaoDescricao] = useState('');
+  const [transacaoValor, setTransacaoValor] = useState('');
+  const [transacaoTipo, setTransacaoTipo] = useState('Despesa');
+  const [transacaoPessoaId, setTransacaoPessoaId] = useState('');
+
+  const buscarPessoas = () => {
+    axios.get('http://localhost:5231/api/Pessoas')
+      .then(res => setPessoas(res.data))
+      .catch(err => console.error(err));
+  };
+
+  const buscarTransacoes = () => {
+    axios.get('http://localhost:5231/api/Transacao')
+      .then(res => setTransacoes(res.data))
+      .catch(err => console.error(err));
+  };
+
+  useEffect(() => {
+    buscarPessoas();
+    buscarTransacoes();
+  }, []);
+
+  const cadastrarPessoa = (e: FormEvent) => {
+    e.preventDefault();
+    axios.post('http://localhost:5231/api/Pessoas', {
+      nome: nome,
+      idade: Number(idade)
+    })
+    .then(() => {
+      setNome(''); 
+      setIdade(''); 
+      buscarPessoas(); 
+    })
+    .catch(err => console.error(err));
+  };
+
+  const deletarPessoa = (id: number) => {
+    axios.delete(`http://localhost:5231/api/Pessoas/${id}`)
+      .then(() => {
+        buscarPessoas();
+        // cascade no bd ja apaga as transacoes, so preciso atualizar a tela
+        buscarTransacoes(); 
+      }) 
+      .catch(err => console.error(err));
+  };
+
+  const cadastrarTransacao = (e: FormEvent) => {
+    e.preventDefault();
+    
+    if (!transacaoPessoaId) {
+      alert("Selecione uma pessoa pra transação.");
+      return;
+    }
+
+    axios.post('http://localhost:5231/api/Transacao', {
+      descricao: transacaoDescricao,
+      valor: parseFloat(transacaoValor),
+      tipo: transacaoTipo === 'Despesa' ? 1 : 0, 
+      pessoaId: Number(transacaoPessoaId)
+    })
+    .then(() => {
+      setTransacaoDescricao('');
+      setTransacaoValor('');
+      setTransacaoTipo('Despesa');
+      setTransacaoPessoaId('');
+      buscarTransacoes();
+    })
+    .catch(erro => {
+      if (erro.response && erro.response.status === 400) {
+        // pega a string direta de erro ou trata o json
+        const msg = typeof erro.response.data === 'string' 
+          ? erro.response.data 
+          : JSON.stringify(erro.response.data.errors || erro.response.data, null, 2);
+          
+        alert(`Erro: ${msg}`);
+      } else {
+        console.error(erro);
+        alert("Falha ao salvar transação.");
+      }
+    });
+  };
+
+  // calcula o consolidado pra jogar no painel superior
+  const totalReceitas = transacoes
+    .filter(t => t.tipo === "Receita" || t.tipo === 0)
+    .reduce((acc, t) => acc + t.valor, 0);
+
+  const totalDespesas = transacoes
+    .filter(t => t.tipo === "Despesa" || t.tipo === 1)
+    .reduce((acc, t) => acc + t.valor, 0);
+
+  const saldoLiquido = totalReceitas - totalDespesas;
+
+  return (
+    <div className="container">
+      <h1 className="titulo">💸 Controle de Gastos</h1>
+      
+      {/* PAINEL DE TOTAIS */}
+      <div className="painel-totais">
+        <div className="card-total">
+          <h3>Total de Receitas</h3>
+          <p className="cor-positiva">R$ {totalReceitas.toFixed(2)}</p>
+        </div>
+        <div className="card-total">
+          <h3>Total de Despesas</h3>
+          <p className="cor-negativa">R$ {totalDespesas.toFixed(2)}</p>
+        </div>
+        <div className="card-total">
+          <h3>Saldo Líquido</h3>
+          <p className={saldoLiquido >= 0 ? 'cor-positiva' : 'cor-negativa'}>
+            R$ {saldoLiquido.toFixed(2)}
+          </p>
+        </div>
+      </div>
+      
+      <div className="grid-layout">
+        
+        {/* LADO ESQUERDO: PESSOAS */}
+        <div className="coluna">
+          <div className="card">
+            <h2>Cadastrar Pessoa</h2>
+            <form onSubmit={cadastrarPessoa} className="form-group">
+              <input type="text" placeholder="Nome completo" className="input-padrao" value={nome} onChange={e => setNome(e.target.value)} required />
+              <input type="number" placeholder="Idade" className="input-padrao" value={idade} onChange={e => setIdade(e.target.value)} required />
+              <button type="submit" className="btn-sucesso">Cadastrar Pessoa</button>
+            </form>
+          </div>
+
+          <h2>Pessoas Cadastradas</h2>
+          {pessoas.length === 0 ? <p className="lista-vazia">Nenhuma pessoa cadastrada.</p> : (
+            <ul className="lista">
+              {pessoas.map(pessoa => (
+                <li key={pessoa.id} className="item-pessoa">
+                  <span><strong>{pessoa.nome}</strong> ({pessoa.idade} anos)</span>
+                  <button onClick={() => deletarPessoa(pessoa.id)} className="btn-perigo">Excluir</button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* LADO DIREITO: TRANSAÇÕES */}
+        <div className="coluna">
+          <div className="card">
+            <h2>Cadastrar Transação</h2>
+            <form onSubmit={cadastrarTransacao} className="form-group">
+              <select className="input-padrao" value={transacaoPessoaId} onChange={e => setTransacaoPessoaId(e.target.value)} required>
+                <option value="">-- Selecione a Pessoa --</option>
+                {pessoas.map(pessoa => (
+                  <option key={pessoa.id} value={pessoa.id}>{pessoa.nome}</option>
+                ))}
+              </select>
+
+              <input type="text" placeholder="Descrição" className="input-padrao" value={transacaoDescricao} onChange={e => setTransacaoDescricao(e.target.value)} required />
+              <input type="number" step="0.01" placeholder="Valor (R$)" className="input-padrao" value={transacaoValor} onChange={e => setTransacaoValor(e.target.value)} required />
+              
+              <select className="input-padrao" value={transacaoTipo} onChange={e => setTransacaoTipo(e.target.value)}>
+                <option value="Despesa">Despesa</option>
+                <option value="Receita">Receita</option>
+              </select>
+
+              <button type="submit" className="btn-primario">Gravar Transação</button>
+            </form>
+          </div>
+
+          <h2>Lista de Transações</h2>
+          {transacoes.length === 0 ? <p className="lista-vazia">Nenhuma transação cadastrada.</p> : (
+            <ul className="lista">
+              {transacoes.map(t => {
+                const dono = pessoas.find(p => p.id === t.pessoaId);
+                const isReceita = t.tipo === "Receita" || t.tipo === 0;
+                
+                return (
+                  <li key={t.id} className={`item-transacao ${isReceita ? 'borda-receita' : 'borda-despesa'}`}>
+                    <div className="transacao-header">
+                      <strong>{t.descricao}</strong>
+                      <span className={isReceita ? 'texto-receita' : 'texto-despesa'}>R$ {t.valor.toFixed(2)}</span>
+                    </div>
+                    <div className="transacao-detalhes">
+                      Pessoa: {dono?.nome || 'Desconhecida'} | Tipo: {isReceita ? 'Receita' : 'Despesa'}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+      </div>
+    </div>
+  )
+}
+
+export default App
