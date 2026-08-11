@@ -73,6 +73,21 @@ function App() {
 
   const cadastrarPessoa = (e: FormEvent) => {
     e.preventDefault();
+
+    // A duplicidade de nome não é proibida pela regra de negócio, mas avisamos
+    // o usuário para evitar cadastros acidentais de uma mesma pessoa duas vezes.
+    const nomeJaExiste = pessoas.some(
+      p => p.nome.trim().toLowerCase() === nome.trim().toLowerCase()
+    );
+    if (nomeJaExiste) {
+      const continuar = window.confirm(
+        `Já existe uma pessoa cadastrada com o nome "${nome}". Deseja cadastrar mesmo assim?`
+      );
+      if (!continuar) {
+        return;
+      }
+    }
+
     axios.post('/api/Pessoas', {
       nome: nome,
       idade: Number(idade)
