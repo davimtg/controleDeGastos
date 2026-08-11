@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ControleDeGastos.Data;
 using ControleDeGastos.Models;
+using ControleDeGastos.Dtos;
 
 namespace ControleDeGastos.Controllers
 {
@@ -24,6 +25,37 @@ namespace ControleDeGastos.Controllers
             var pessoas = await _context.Pessoas.ToListAsync();
             
             return Ok(pessoas); 
+        }
+
+        [HttpGet("totais")]
+        public async Task<IActionResult> GetTotais()
+        {
+            // Traz cada pessoa junto com suas transações para calcular os totai 
+            var pessoas = await _context.Pessoas
+                                         .Include(p => p.Transacoes)
+                                         .ToListAsync();
+
+            var totaisPorPessoa = pessoas.Select(p => new PessoaTotalDto
+            {
+                PessoaId = p.Id,
+                Nome = p.Nome,
+                Idade = p.Idade,
+                TotalReceitas = p.Transacoes
+                                 .Where(t => t.Tipo == TipoTransacao.Receita)
+                                 .Sum(t => t.Valor),
+                TotalDespesas = p.Transacoes
+                                 .Where(t => t.Tipo == TipoTransacao.Despesa)
+                                 .Sum(t => t.Valor),
+            }).ToList();
+
+            var resumo = new ResumoTotaisDto
+            {
+                Pessoas = totaisPorPessoa,
+                TotalGeralReceitas = totaisPorPessoa.Sum(p => p.TotalReceitas),
+                TotalGeralDespesas = totaisPorPessoa.Sum(p => p.TotalDespesas),
+            };
+
+            return Ok(resumo);
         }
         [HttpPost]
         public async Task<IActionResult> PostPessoa(Pessoa pessoa)

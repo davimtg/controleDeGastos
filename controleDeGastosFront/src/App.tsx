@@ -1,4 +1,4 @@
-import { useEffect, useState, FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import axios from 'axios'
 import './App.css'
 
@@ -17,9 +17,26 @@ interface Transacao {
   pessoa?: Pessoa; 
 }
 
+interface PessoaTotal {
+  pessoaId: number;
+  nome: string;
+  idade: number;
+  totalReceitas: number;
+  totalDespesas: number;
+  saldo: number;
+}
+
+interface ResumoTotais {
+  pessoas: PessoaTotal[];
+  totalGeralReceitas: number;
+  totalGeralDespesas: number;
+  saldoGeral: number;
+}
+
 function App() {
   const [pessoas, setPessoas] = useState<Pessoa[]>([]);
   const [transacoes, setTransacoes] = useState<Transacao[]>([]);
+  const [resumoTotais, setResumoTotais] = useState<ResumoTotais | null>(null);
   
   const [nome, setNome] = useState('');
   const [idade, setIdade] = useState('');
@@ -41,9 +58,17 @@ function App() {
       .catch(err => console.error(err));
   };
 
+  // busca o resumo de totais (por pessoa + geral) calculado no back-end
+  const buscarTotais = () => {
+    axios.get('http://localhost:5231/api/Pessoas/totais')
+      .then(res => setResumoTotais(res.data))
+      .catch(err => console.error(err));
+  };
+
   useEffect(() => {
     buscarPessoas();
     buscarTransacoes();
+    buscarTotais();
   }, []);
 
   const cadastrarPessoa = (e: FormEvent) => {
@@ -56,6 +81,7 @@ function App() {
       setNome(''); 
       setIdade(''); 
       buscarPessoas(); 
+      buscarTotais();
     })
     .catch(err => console.error(err));
   };
@@ -66,6 +92,7 @@ function App() {
         buscarPessoas();
         // cascade no bd ja apaga as transacoes, so preciso atualizar a tela
         buscarTransacoes(); 
+        buscarTotais();
       }) 
       .catch(err => console.error(err));
   };
@@ -90,6 +117,7 @@ function App() {
       setTransacaoTipo('Despesa');
       setTransacaoPessoaId('');
       buscarTransacoes();
+      buscarTotais();
     })
     .catch(erro => {
       if (erro.response && erro.response.status === 400) {
@@ -106,22 +134,16 @@ function App() {
     });
   };
 
-  // calcula o consolidado pra jogar no painel superior
-  const totalReceitas = transacoes
-    .filter(t => t.tipo === "Receita" || t.tipo === 0)
-    .reduce((acc, t) => acc + t.valor, 0);
-
-  const totalDespesas = transacoes
-    .filter(t => t.tipo === "Despesa" || t.tipo === 1)
-    .reduce((acc, t) => acc + t.valor, 0);
-
-  const saldoLiquido = totalReceitas - totalDespesas;
+  // consolidado geral vem do back-end (GET /api/Pessoas/totais), que soma os totais de todas as pessoas
+  const totalReceitas = resumoTotais?.totalGeralReceitas ?? 0;
+  const totalDespesas = resumoTotais?.totalGeralDespesas ?? 0;
+  const saldoLiquido = resumoTotais?.saldoGeral ?? 0;
 
   return (
     <div className="container">
       <h1 className="titulo">💸 Controle de Gastos</h1>
       
-      {/* PAINEL DE TOTAIS */}
+      {/* PAINEL DE TOTAIS GERAIS */}
       <div className="painel-totais">
         <div className="card-total">
           <h3>Total de Receitas</h3>
@@ -137,6 +159,43 @@ function App() {
             R$ {saldoLiquido.toFixed(2)}
           </p>
         </div>
+      </div>
+
+      {/* RESUMO DE TOTAIS POR PESSOA */}
+      <div className="card">
+        <h2>Resumo de Totais por Pessoa</h2>
+        {!resumoTotais || resumoTotais.pessoas.length === 0 ? (
+          <p className="lista-vazia">Nenhuma pessoa cadastrada.</p>
+        ) : (
+          <table className="tabela-resumo">
+            <thead>
+              <tr>
+                <th>Pessoa</th>
+                <th>Receitas</th>
+                <th>Despesas</th>
+                <th>Saldo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {resumoTotais.pessoas.map(p => (
+                <tr key={p.pessoaId}>
+                  <td>{p.nome}</td>
+                  <td className="cor-positiva">R$ {p.totalReceitas.toFixed(2)}</td>
+                  <td className="cor-negativa">R$ {p.totalDespesas.toFixed(2)}</td>
+                  <td className={p.saldo >= 0 ? 'cor-positiva' : 'cor-negativa'}>R$ {p.saldo.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td><strong>Total Geral</strong></td>
+                <td className="cor-positiva"><strong>R$ {totalReceitas.toFixed(2)}</strong></td>
+                <td className="cor-negativa"><strong>R$ {totalDespesas.toFixed(2)}</strong></td>
+                <td className={saldoLiquido >= 0 ? 'cor-positiva' : 'cor-negativa'}><strong>R$ {saldoLiquido.toFixed(2)}</strong></td>
+              </tr>
+            </tfoot>
+          </table>
+        )}
       </div>
       
       <div className="grid-layout">

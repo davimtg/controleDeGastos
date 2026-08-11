@@ -355,3 +355,26 @@
 .cor-negativa {
   color: #d32f2f;
 }
+
+.tabela-resumo {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabela-resumo th,
+.tabela-resumo td {
+  text-align: left;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.tabela-resumo thead th {
+  color: #555;
+  font-size: 0.9em;
+  text-transform: uppercase;
+}
+
+.tabela-resumo tfoot td {
+  border-top: 2px solid #ccc;
+  border-bottom: none;
+}

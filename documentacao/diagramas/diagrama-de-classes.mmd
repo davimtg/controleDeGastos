@@ -1,0 +1,26 @@
+%% Diagrama de Classes - Controle de Gastos
+classDiagram
+    class Pessoa {
+        +int Id
+        +string Nome
+        +int Idade
+        +List~Transacao~ Transacoes
+    }
+
+    class Transacao {
+        +int Id
+        +string? Descricao
+        +decimal Valor
+        +TipoTransacao Tipo
+        +int PessoaId
+        +Pessoa? Pessoa
+    }
+
+    class TipoTransacao {
+        <<enumeration>>
+        Receita = 0
+        Despesa = 1
+    }
+
+    Pessoa "1" *-- "0..*" Transacao : possui
+    Transacao "0..*" --> "1" TipoTransacao : classificada como

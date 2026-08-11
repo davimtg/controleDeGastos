@@ -1,0 +1,23 @@
+%% Diagrama de Sequência - Exclusão de Pessoa (cascade delete)
+sequenceDiagram
+    actor Usuario as Usuário
+    participant FE as Front-end (React)
+    participant API as PessoasController
+    participant DB as AppDbContext / SQLite
+
+    Usuario->>FE: Clica em "Excluir" na pessoa
+    FE->>API: DELETE /api/Pessoas/{id}
+    API->>DB: Pessoas.FindAsync(id)
+    DB-->>API: Pessoa (ou null)
+
+    alt Pessoa não encontrada
+        API-->>FE: 404 Not Found
+        FE-->>Usuario: Exibe erro
+    else Pessoa encontrada
+        API->>DB: Pessoas.Remove(pessoa)
+        API->>DB: SaveChangesAsync()
+        DB->>DB: ON DELETE CASCADE remove transações vinculadas
+        DB-->>API: Alterações confirmadas
+        API-->>FE: 204 No Content
+        FE->>FE: Recarrega listas de pessoas e transações
+    end

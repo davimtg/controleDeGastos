@@ -1,0 +1,32 @@
+%% Diagrama de Casos de Uso - Controle de Gastos
+%% Mermaid não possui um tipo nativo "usecase", então o diagrama é
+%% representado com flowchart: ator -> casos de uso (elipses) -> regras (losangos)
+flowchart LR
+    Ator(["🧑 Usuário"])
+
+    subgraph Sistema["Sistema de Controle de Gastos"]
+        direction TB
+        UC1([Cadastrar Pessoa])
+        UC2([Excluir Pessoa])
+        UC3([Listar Pessoas])
+        UC4([Cadastrar Transação])
+        UC5([Listar Transações])
+        UC6([Consultar Resumo de Totais])
+    end
+
+    RegraCascata{{"«include»
+    Exclusão em cascata:
+    apaga transações vinculadas"}}
+    RegraIdade{{"«include»
+    Menor de 18 anos:
+    só pode cadastrar despesas"}}
+
+    Ator --> UC1
+    Ator --> UC2
+    Ator --> UC3
+    Ator --> UC4
+    Ator --> UC5
+    Ator --> UC6
+
+    UC2 -.-> RegraCascata
+    UC4 -.-> RegraIdade

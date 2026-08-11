@@ -1,0 +1,25 @@
+%% Diagrama de Sequência - Cadastro de Transação (com validação de idade)
+sequenceDiagram
+    actor Usuario as Usuário
+    participant FE as Front-end (React)
+    participant API as TransacaoController
+    participant DB as AppDbContext / SQLite
+
+    Usuario->>FE: Preenche formulário de transação
+    FE->>API: POST /api/Transacao
+    API->>DB: Pessoas.FindAsync(PessoaId)
+    DB-->>API: Pessoa (ou null)
+
+    alt Pessoa não encontrada
+        API-->>FE: 404 Not Found
+        FE-->>Usuario: Exibe "Pessoa não encontrada"
+    else Pessoa menor de 18 anos e Tipo = Receita
+        API-->>FE: 400 Bad Request
+        FE-->>Usuario: Exibe "Menores de 18 anos só podem cadastrar despesas"
+    else Validações OK
+        API->>DB: Transacoes.Add(transacao)
+        API->>DB: SaveChangesAsync()
+        DB-->>API: Transação persistida
+        API-->>FE: 201 Created
+        FE-->>Usuario: Atualiza lista de transações e totais
+    end
